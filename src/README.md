@@ -1,8 +1,17 @@
 
-# HelloWorld.lf
+# Programs
 
 By convention, LF programs are put in a `src` directory. This `src` directory
-initially contains one program, `HelloWorld.lf`, which demonstrates:
+contains the following programs:
+
+- [HelloWorld.lf](#helloworldlf) — Demonstrates basic Lingua Franca features.
+- [TimeSeries.lf](#timeserieslf) — Plots a live time series using [ReRun](https://rerun.io).
+
+---
+
+# HelloWorld.lf
+
+The `HelloWorld.lf` program demonstrates:
 
 1. **Reactors** - Modular components that encapsulate behavior
    - `Greeter`: Generates periodic greetings
@@ -105,3 +114,50 @@ Connections between reactors (like `greeter.greeting -> counter.message`) have z
 - Try changing the program to a federated one
 
 For many more examples, see the `src` directories within the `../context` directory.
+
+---
+
+# TimeSeries.lf
+
+The `TimeSeries.lf` program demonstrates plotting a live time series using
+[ReRun](https://rerun.io), a multimodal data visualization tool. It generates
+sine and cosine waves and streams them to the ReRun viewer in real time.
+
+The program uses the `TimeSeriesPlot` reactor defined in `lib/ReRunPlotters.lf`,
+which wraps the ReRun Python SDK to make time series logging easy in Lingua Franca.
+
+## Prerequisites
+
+Install the ReRun Python SDK:
+
+```bash
+pip install rerun-sdk
+```
+
+## Compile and Run
+
+```bash
+lfc src/TimeSeries.lf
+./bin/TimeSeries
+```
+
+The ReRun viewer will open automatically and display two live time series:
+a sine wave (blue) and a cosine wave (orange), updating every 100 ms for 10 seconds.
+
+## Key Features Demonstrated
+
+1. **Library reactor import** — `TimeSeriesPlot` is imported from `lib/ReRunPlotters.lf`.
+2. **Multiple reactor instances** — `sin_plot` and `cos_plot` share the same ReRun app.
+3. **Real-time visualization** — Each timer tick logs a new data point to ReRun.
+4. **Logical time as timeline** — Data is indexed by LF logical time in seconds.
+
+## lib/ReRunPlotters.lf
+
+The `TimeSeriesPlot` reactor in `lib/ReRunPlotters.lf` accepts the following parameters:
+
+| Parameter | Default        | Description                                          |
+|-----------|----------------|------------------------------------------------------|
+| `app_id`  | `"TimeSeries"` | Application ID shown in the ReRun viewer title.      |
+| `label`   | `"scalar"`     | Entity path identifying the series in ReRun.         |
+| `color`   | `None`         | Optional `[r, g, b]` or `[r, g, b, a]` line color.  |
+| `spawn`   | `True`         | If `True`, launch the ReRun viewer automatically.    |

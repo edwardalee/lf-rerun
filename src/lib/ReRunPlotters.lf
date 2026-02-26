@@ -1,0 +1,61 @@
+/**
+ * @file
+ * @author Edward A. Lee
+ * @brief Reactors for plotting time series using ReRun (https://rerun.io).
+ *
+ * To use these reactors, install the rerun-sdk package:
+ *   pip install rerun-sdk
+ */
+target Python
+
+/**
+ * @brief A reactor that plots a scalar time series using the ReRun visualization tool.
+ *
+ * Each value received on the `y` input is logged to ReRun at the current logical time,
+ * creating a scrolling time series plot in the ReRun viewer.
+ *
+ * The `app_id` parameter is the application ID shown in the ReRun viewer title.
+ *
+ * The `label` parameter is the entity path used to identify the series in ReRun.
+ *
+ * The `color` parameter is an optional list [r, g, b] or [r, g, b, a] specifying the line color.
+ *
+ * The `spawn` parameter, if True, automatically launches the ReRun viewer as a subprocess.
+ * When multiple instances of this reactor share the same `app_id`, ReRun is initialized only
+ * once. To ensure the viewer is launched, set `spawn=True` on the first instance instantiated
+ * in your program (the default).
+ *
+ * To use this reactor, install the rerun-sdk package:
+ *   pip install rerun-sdk
+ * See [ReRun documentation](https://www.rerun.io/docs) for more information.
+ */
+reactor TimeSeriesPlot(
+    app_id = "TimeSeries",
+    label = "scalar",
+    color = {= None =},
+    spawn = True) {
+  preamble {=
+    import rerun as rr
+    import threading
+    _rerun_initialized = False
+    _rerun_lock = threading.Lock()
+  =}
+
+  input y
+
+  reaction(startup) {=
+    global _rerun_initialized
+    with _rerun_lock:
+      if not _rerun_initialized:
+        self.rr.init(self.app_id, spawn=self.spawn)
+        _rerun_initialized = True
+    if self.color:
+      self.rr.log(self.label, self.rr.SeriesLine(color=self.color), static=True)
+  =}
+
+  reaction(y) {=
+    t = lf.time.logical_elapsed() / 1e9  # nanoseconds to seconds
+    self.rr.set_time_seconds("logical_time", t)
+    self.rr.log(self.label, self.rr.Scalar(y.value))
+  =}
+}

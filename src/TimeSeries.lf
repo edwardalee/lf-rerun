@@ -1,0 +1,54 @@
+/**
+ * @file
+ * @author Edward A. Lee
+ * @brief Example program demonstrating time series plotting with ReRun.
+ *
+ * This program generates a sine wave and a cosine wave and plots them as live
+ * time series using the ReRun visualization tool (https://rerun.io). New data points are
+ * produced every 100 milliseconds and streamed to the ReRun viewer in real time.
+ *
+ * ## Prerequisites
+ *
+ * Install the rerun-sdk Python package:
+ * ```
+ * pip install rerun-sdk
+ * ```
+ *
+ * ## Compile and Run
+ *
+ * ```
+ * lfc src/TimeSeries.lf
+ * ./bin/TimeSeries
+ * ```
+ *
+ * The ReRun viewer will open automatically and display the live time series plots.
+ */
+target Python {
+  timeout: 10 s
+}
+
+import TimeSeriesPlot from "lib/ReRunPlotters.lf"
+
+main reactor TimeSeries {
+  preamble {=
+    import math
+  =}
+
+  timer t(0, 100 msec)
+
+  sin_plot = new TimeSeriesPlot(
+      app_id = "TimeSeries",
+      label = "sin",
+      color = {= [0, 128, 255] =})
+
+  cos_plot = new TimeSeriesPlot(
+      app_id = "TimeSeries",
+      label = "cos",
+      color = {= [255, 128, 0] =})
+
+  reaction(t) -> sin_plot.y, cos_plot.y {=
+    elapsed = lf.time.logical_elapsed() / 1e9  # seconds
+    sin_plot.y.set(self.math.sin(2 * self.math.pi * elapsed))
+    cos_plot.y.set(self.math.cos(2 * self.math.pi * elapsed))
+  =}
+}
