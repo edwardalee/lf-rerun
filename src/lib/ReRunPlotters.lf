@@ -6,7 +6,9 @@
  * To use these reactors, install the rerun-sdk package:
  *   pip install rerun-sdk
  */
-target Python
+target Python {
+  timeout: 10 s
+}
 
 /**
  * @brief A reactor that plots a scalar time series using the ReRun visualization tool.
@@ -29,17 +31,19 @@ target Python
  *   pip install rerun-sdk
  * See [ReRun documentation](https://www.rerun.io/docs) for more information.
  */
+preamble {=
+  # These need to be global so that they can be accessed by all instances of the reactor.
+  import rerun as rr
+  import threading
+  _rerun_initialized = False  # Global variable to track if ReRun is initialized.
+  _rerun_lock = threading.Lock()  # Global lock to synchronize access to ReRun.
+=}
+
 reactor TimeSeriesPlot(
     app_id = "TimeSeries",
     label = "scalar",
     color = {= None =},
     spawn = True) {
-  preamble {=
-    import rerun as rr
-    import threading
-    _rerun_initialized = False
-    _rerun_lock = threading.Lock()
-  =}
 
   input y
 
@@ -47,15 +51,16 @@ reactor TimeSeriesPlot(
     global _rerun_initialized
     with _rerun_lock:
       if not _rerun_initialized:
-        self.rr.init(self.app_id, spawn=self.spawn)
+        rr.init(self.app_id, spawn=self.spawn)
         _rerun_initialized = True
-    if self.color:
-      self.rr.log(self.label, self.rr.SeriesLine(color=self.color), static=True)
+    # if self.color:
+      # rr.log(self.label, rr.SeriesLine(color=self.color), static=True)
   =}
 
   reaction(y) {=
-    t = lf.time.logical_elapsed() / 1e9  # nanoseconds to seconds
-    self.rr.set_time_seconds("logical_time", t)
-    self.rr.log(self.label, self.rr.Scalar(y.value))
+    t = lf.time.logical() / 1e9  # nanoseconds to seconds
+    with _rerun_lock:
+      rr.set_time("logical_time", timestamp = t)
+      rr.log(self.label, rr.Scalars(y.value))
   =}
 }
